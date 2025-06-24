@@ -1,23 +1,47 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>방 배정 확인</title>
+  <title>방 배정 조회</title>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <h2>방 배정 확인</h2>
+  <h2>수양회 방 배정 확인</h2>
   <input type="text" id="nameInput" placeholder="이름을 입력하세요">
-  <button onclick="checkRoom()">확인</button>
+  <button onclick="searchRoom()">조회</button>
   <p id="result"></p>
 
   <script>
-    async function checkRoom() {
-      const name = document.getElementById("nameInput").value;
-      const response = await fetch("https://script.google.com/macros/s/여기/URL_ID/exec?name=" + encodeURIComponent(name));
-      const result = await response.text();
-      document.getElementById("result").innerText = name + "님의 방 번호는: " + result;
+    let roomData = [];
+
+    // 엑셀 파일 로드
+    async function loadExcel() {
+      const response = await fetch('room_assignment_sample.xlsx');
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      roomData = XLSX.utils.sheet_to_json(sheet); // JSON으로 변환
     }
+
+    async function searchRoom() {
+      const name = document.getElementById("nameInput").value.trim();
+
+      // 데이터가 비어있으면 먼저 로딩
+      if (roomData.length === 0) {
+        await loadExcel();
+      }
+
+      const match = roomData.find(row => row["이름"] === name);
+
+      if (match) {
+        document.getElementById("result").innerText = `${name}님의 방 번호는 ${match["방번호"]}호입니다.`;
+      } else {
+        document.getElementById("result").innerText = `해당 이름을 찾을 수 없습니다.`;
+      }
+    }
+
+    // 페이지 로드시 엑셀 한번 미리 불러오기
+    window.onload = loadExcel;
   </script>
 </body>
 </html>
